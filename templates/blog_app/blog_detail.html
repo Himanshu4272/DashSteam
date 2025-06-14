@@ -1,0 +1,77 @@
+{% extends 'blog_app/base.html' %}
+{% block title %}{{ post.title }}{% endblock %}
+{% block content %}
+<div class="card mb-4">
+  {% if post.image %}
+    <img src="{{ post.image.url }}" class="card-img-top" alt="{{ post.title }}">
+  {% endif %}
+  <div class="card-body">
+    <h2 class="card-title">{{ post.title }}</h2>
+    <p class="card-text">By {{ post.author.username }} | <small>Created: {{ post.created_at|date:'M d, Y' }} | Updated: {{ post.updated_at|date:'M d, Y' }}</small></p>
+    <div class="mb-2">Average Rating: <strong>{{ post.average_rating }}</strong> / 5</div>
+    <div class="mb-2">{{ post.content|safe }}</div>
+    {% if user.is_authenticated %}
+      <form id="rate-form" method="post" action="{% url 'rate_post' post.pk %}">
+        {% csrf_token %}
+        <label for="rating">Your Rating:</label>
+        <select name="rating" id="rating" class="form-select w-auto d-inline-block">
+          {% for i in "12345" %}
+            <option value="{{ forloop.counter }}" {% if user_rating and user_rating.rating == forloop.counter %}selected{% endif %}>{{ forloop.counter }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-sm btn-success">Rate</button>
+      </form>
+      <div id="rating-msg"></div>
+    {% else %}
+      <p><a href="/accounts/login/">Login</a> to rate this post.</p>
+    {% endif %}
+    {% if user.is_staff %}
+      <a href="{% url 'blog_edit' post.pk %}" class="btn btn-warning mt-2">Edit</a>
+      <a href="{% url 'blog_delete' post.pk %}" class="btn btn-danger mt-2">Delete</a>
+    {% endif %}
+  </div>
+</div>
+
+<h3>Comments</h3>
+<div class="mb-4">
+  {% for comment in comments %}
+    <div class="border rounded p-2 mb-2">
+      <strong>{{ comment.user.username }}</strong> <small class="text-muted">{{ comment.created_at|date:'M d, Y H:i' }}</small>
+      <div>{{ comment.content }}</div>
+    </div>
+  {% empty %}
+    <p>No comments yet.</p>
+  {% endfor %}
+</div>
+{% if user.is_authenticated %}
+  <form method="post" class="mb-4">
+    {% csrf_token %}
+    {{ comment_form.as_p }}
+    <button type="submit" class="btn btn-primary">Add Comment</button>
+  </form>
+{% else %}
+  <p><a href="/accounts/login/">Login</a> to comment.</p>
+{% endif %}
+<a href="/" class="btn btn-secondary">Back to Home</a>
+{% endblock %}
+{% block extra_js %}
+<script>
+document.getElementById('rate-form')?.addEventListener('submit', function(e) {
+  e.preventDefault();
+  const form = e.target;
+  fetch(form.action, {
+    method: 'POST',
+    headers: {'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value},
+    body: new URLSearchParams(new FormData(form))
+  })
+  .then(response => response.json())
+  .then(data => {
+    if(data.success) {
+      document.getElementById('rating-msg').innerHTML = '<div class="alert alert-success">Thank you for rating! Average: ' + data.average + '</div>';
+    } else {
+      document.getElementById('rating-msg').innerHTML = '<div class="alert alert-danger">Error submitting rating.</div>';
+    }
+  });
+});
+</script>
+{% endblock %} 

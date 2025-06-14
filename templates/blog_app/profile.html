@@ -1,0 +1,22 @@
+{% extends 'blog_app/base.html' %}
+{% block title %}Profile{% endblock %}
+{% block content %}
+<h2>{{ user.username }}'s Profile</h2>
+<p>Email: {{ user.email }}</p>
+<h3>Your Posts</h3>
+<ul>
+  {% for post in posts %}
+    <li><a href="{% url 'blog_detail' post.pk %}">{{ post.title }}</a> ({{ post.created_at|date:'M d, Y' }})</li>
+  {% empty %}
+    <li>You haven't written any posts yet.</li>
+  {% endfor %}
+</ul>
+<h3>Your Ratings</h3>
+<ul>
+  {% for rating in ratings %}
+    <li>{{ rating.post.title }}: {{ rating.rating }} / 5</li>
+  {% empty %}
+    <li>You haven't rated any posts yet.</li>
+  {% endfor %}
+</ul>
+{% endblock %} 
